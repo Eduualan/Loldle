@@ -42,7 +42,8 @@ class AdminViewModel(private val repository: ChampionRepository) : ViewModel() {
 
     fun sync() = viewModelScope.launch {
         state = state.copy(notice = "Atualizando lista da Data Dragon…")
-        state = state.copy(notice = if (repository.sync()) "Lista sincronizada." else "A sincronização falhou.")
+        val synced = repository.sync()
+        state = state.copy(notice = if (synced) "Lista sincronizada." else "A sincronização falhou.")
     }
 
     fun delete(champion: ChampionEntity) = viewModelScope.launch {
@@ -65,7 +66,16 @@ class AdminViewModel(private val repository: ChampionRepository) : ViewModel() {
         )
     }
 
-    fun save(id: String?, name: String, title: String, role: String, resource: String, range: String) = viewModelScope.launch {
+    fun save(
+        id: String?,
+        name: String,
+        title: String,
+        role: String,
+        resource: String,
+        range: String,
+        gender: String,
+        species: String
+    ) = viewModelScope.launch {
         state = state.copy(saveSucceeded = false, notice = null)
         if (name.isBlank() || title.isBlank() || role.isBlank()) {
             state = state.copy(notice = "Preencha nome, título e classe.")
@@ -76,7 +86,16 @@ class AdminViewModel(private val repository: ChampionRepository) : ViewModel() {
             return@launch
         }
         val key = id ?: name.trim().replace(Regex("[^A-Za-z0-9]"), "").ifBlank { "champion${System.currentTimeMillis()}" }
-        val champion = ChampionEntity(key, name.trim(), title.trim(), role.trim(), resource.trim().ifBlank { "Desconhecido" }, range)
+        val champion = ChampionEntity(
+            id = key,
+            name = name.trim(),
+            title = title.trim(),
+            role = role.trim(),
+            resource = resource.trim().ifBlank { "Desconhecido" },
+            rangeType = range.trim().ifBlank { "Desconhecido" },
+            gender = gender.trim().ifBlank { ChampionEntity.UNKNOWN_GENDER },
+            species = species.trim().ifBlank { ChampionEntity.UNKNOWN_SPECIES }
+        )
         val saved = if (id == null) repository.saveChampion(champion) else repository.updateChampion(champion)
         state = state.copy(
             notice = if (saved) "Campeão salvo." else "Não foi possível salvar o campeão.",
@@ -87,9 +106,14 @@ class AdminViewModel(private val repository: ChampionRepository) : ViewModel() {
     fun clearSaveSucceeded() { state = state.copy(saveSucceeded = false) }
     fun clearGameUpdateSucceeded() { state = state.copy(gameUpdateSucceeded = false) }
 
-    fun filteredChampions(query: String): List<ChampionEntity> = state.champions
-        .filter { it.name.contains(query, ignoreCase = true) || it.role.contains(query, ignoreCase = true) }
-        .sortedBy { it.name }
+    fun filteredChampions(query: String): List<ChampionEntity> {
+        if (query.isBlank()) return state.champions.sortedBy { it.name }
+
+        return state.champions.filter { champion ->
+            listOf(champion.name, champion.title, champion.role, champion.gender, champion.species)
+                .any { value -> value.contains(query.trim(), ignoreCase = true) }
+        }.sortedBy { it.name }
+    }
 
     fun ranking(): List<Pair<String, Int>> = state.games
         .filter { it.won }

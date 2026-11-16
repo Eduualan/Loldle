@@ -8,7 +8,7 @@ Aplicativo Android para adivinhar campeões de League of Legends. A cada palpite
 - Rodadas de até seis tentativas, com sugestões de campeões e dicas.
 - Nova rodada automática após acertar; o botão **Nova partida** também reinicia o jogo.
 - Histórico local e ranking de vitórias.
-- Consulta, cadastro, edição e exclusão de campeões.
+- Consulta, cadastro, edição e exclusão de campeões, incluindo classe, recurso, alcance, gênero e espécie.
 - Consulta, edição e exclusão de partidas no perfil administrativo.
 - Sincronização de nomes, classes, recursos e alcance com a API [Data Dragon](https://developer.riotgames.com/docs/lol#data-dragon); retratos carregados do CDN oficial.
 - Gênero e raça/espécie complementados pelo arquivo comunitário [LoLdleData](https://github.com/iEranDEV/loldle-data/blob/master/output.json), pois esses campos não fazem parte do catálogo do Data Dragon.

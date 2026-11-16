@@ -5,6 +5,7 @@ import com.example.myapplication.data.local.ChampionEntity
 import com.example.myapplication.data.local.GameDao
 import com.example.myapplication.data.local.GameEntity
 import com.example.myapplication.data.remote.ChampionApi
+import com.example.myapplication.data.remote.ChampionDto
 import com.example.myapplication.data.remote.ChampionTraitsApi
 import com.example.myapplication.data.remote.ChampionTraitsDto
 import kotlinx.coroutines.flow.Flow
@@ -25,59 +26,86 @@ class ChampionRepository(
     private val _championVersion = MutableStateFlow<String?>(null)
     val championVersion = _championVersion.asStateFlow()
     private var cachedTraits: Map<String, ChampionTraitsDto> = emptyMap()
+    private val sampleIds by lazy { sampleChampions.mapTo(mutableSetOf()) { it.id } }
 
     fun observeChampions(): Flow<List<ChampionEntity>> = champions.observeAll()
     fun observeGames(): Flow<List<GameEntity>> = games.observeAll()
+
     suspend fun initialise() {
+        val savedChampions = safeAdmin { champions.getAll() }.orEmpty()
+        val hasOnlySamples = savedChampions.isNotEmpty() && savedChampions.all { it.id in sampleIds }
+
+        if (savedChampions.isEmpty() || hasOnlySamples) {
+            val synced = sync()
+            if (!synced && savedChampions.isEmpty()) {
+                safeAdmin { champions.insertRemote(sampleChampions) }
+            }
+            return
+        }
+
+        refreshVersion()
+        refreshSavedTraits(savedChampions)
+    }
+
+    suspend fun sync(): Boolean {
+        return try {
+            val version = api.versions().firstOrNull() ?: error("Versão indisponível")
+            _championVersion.value = version
+
+            val traits = loadTraits()
+            val remoteChampions = api.champions(version).data.values.map { it.toEntity(traits[it.id]) }
+            champions.insertRemote(remoteChampions)
+            remoteChampions.forEach { champion ->
+                traits[champion.id]?.let { trait -> updateTraits(champion.id, trait) }
+            }
+
+            _adminError.value = null
+            true
+        } catch (cancelled: CancellationException) {
+            throw cancelled
+        } catch (_: Exception) {
+            _adminError.value = "Falha ao atualizar campeões pela API. Confira sua conexão."
+            false
+        }
+    }
+
+    private suspend fun refreshVersion() {
         try {
             _championVersion.value = api.versions().firstOrNull()
         } catch (cancelled: CancellationException) {
             throw cancelled
         } catch (_: Exception) {
-            // A lista local continua disponível mesmo sem conexão.
-        }
-        val traits = loadTraits()
-        if (traits.isNotEmpty()) {
-            safeAdmin { champions.getAll() }.orEmpty().forEach { champion ->
-                traits[champion.id]?.let { trait ->
-                    safeAdmin {
-                        champions.updateTraits(champion.id, trait.gender.toPortugueseGender(), trait.species.toPortugueseSpecies())
-                    }
-                }
-            }
-        }
-        if (safeAdmin { champions.getAll() }.orEmpty().isEmpty()) {
-            if (!sync()) safeAdmin { champions.insertRemote(sampleChampions) }
+            // Os dados já salvos continuam disponíveis sem conexão.
         }
     }
-    suspend fun sync(): Boolean = try {
-        val version = api.versions().firstOrNull() ?: error("Versão indisponível")
-        _championVersion.value = version
+
+    private suspend fun refreshSavedTraits(savedChampions: List<ChampionEntity>) {
         val traits = loadTraits()
-        val data = api.champions(version).data.values.map { item ->
-            val trait = traits[item.id]
-            ChampionEntity(
-                item.id, item.name, item.title,
-                item.tags.joinToString(" / ") { it.toRole() }.ifBlank { "Outro" },
-                item.partype.ifBlank { "Sem recurso" },
-                if (item.stats.attackrange > 300) "À distância" else "Corpo a corpo",
-                trait?.gender.toPortugueseGender(),
-                trait?.species.toPortugueseSpecies()
+        savedChampions.forEach { champion ->
+            traits[champion.id]?.let { updateTraits(champion.id, it) }
+        }
+    }
+
+    private suspend fun updateTraits(id: String, traits: ChampionTraitsDto) {
+        safeAdmin {
+            champions.updateTraits(
+                id,
+                traits.gender.toPortugueseGender(),
+                traits.species.toPortugueseSpecies()
             )
         }
-        champions.insertRemote(data)
-        data.forEach { champion ->
-            val trait = traits[champion.id] ?: return@forEach
-            champions.updateTraits(champion.id, trait.gender.toPortugueseGender(), trait.species.toPortugueseSpecies())
-        }
-        _adminError.value = null
-        true
-    } catch (cancelled: CancellationException) {
-        throw cancelled
-    } catch (_: Exception) {
-        _adminError.value = "Falha ao atualizar campeões pela API. Confira sua conexão."
-        false
     }
+
+    private fun ChampionDto.toEntity(traits: ChampionTraitsDto?) = ChampionEntity(
+        id = id,
+        name = name,
+        title = title,
+        role = tags.joinToString(" / ") { it.toRole() }.ifBlank { "Outro" },
+        resource = partype.ifBlank { "Sem recurso" },
+        rangeType = if (stats.attackrange > 300) "À distância" else "Corpo a corpo",
+        gender = traits?.gender.toPortugueseGender(),
+        species = traits?.species.toPortugueseSpecies()
+    )
     suspend fun saveChampion(champion: ChampionEntity) = safeAdmin { champions.insert(champion) } != null
     suspend fun updateChampion(champion: ChampionEntity) = safeAdmin { champions.update(champion) > 0 } == true
     suspend fun deleteChampion(champion: ChampionEntity) = safeAdmin { champions.delete(champion) > 0 } == true
@@ -125,7 +153,7 @@ class ChampionRepository(
         "MALE" -> "Masculino"
         "FEMALE" -> "Feminino"
         "OTHER" -> "Outro"
-        else -> "Desconhecido"
+        else -> ChampionEntity.UNKNOWN_GENDER
     }
 
     private fun List<String>?.toPortugueseSpecies(): String = this
@@ -146,8 +174,8 @@ class ChampionRepository(
             }
         }
         ?.joinToString(" / ")
-        ?.ifBlank { "Desconhecida" }
-        ?: "Desconhecida"
+        ?.ifBlank { ChampionEntity.UNKNOWN_SPECIES }
+        ?: ChampionEntity.UNKNOWN_SPECIES
 
     private val sampleChampions = listOf(
         ChampionEntity("Ahri", "Ahri", "A Raposa de Nove Caudas", "Mago", "Mana", "À distância"),

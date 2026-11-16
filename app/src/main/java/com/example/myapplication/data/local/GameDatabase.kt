@@ -1,18 +1,20 @@
 package com.example.myapplication.data.local
 
 import android.content.Context
+import androidx.room.Dao
 import androidx.room.Database
 import androidx.room.Delete
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
-import androidx.room.Dao
 import androidx.room.Query
-import androidx.room.Update
 import androidx.room.Room
 import androidx.room.RoomDatabase
+import androidx.room.Update
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 import kotlinx.coroutines.flow.Flow
+
+private const val DATABASE_VERSION = 2
 
 @Dao
 interface ChampionDao {
@@ -35,12 +37,15 @@ interface GameDao {
     @Delete suspend fun delete(game: GameEntity): Int
 }
 
-@Database(entities = [ChampionEntity::class, GameEntity::class], version = 2, exportSchema = false)
+@Database(entities = [ChampionEntity::class, GameEntity::class], version = DATABASE_VERSION, exportSchema = false)
 abstract class GameDatabase : RoomDatabase() {
     abstract fun champions(): ChampionDao
     abstract fun games(): GameDao
+
     companion object {
-        private val MIGRATION_1_2 = object : Migration(1, 2) {
+        private const val DATABASE_NAME = "loldle.db"
+
+        private val MIGRATION_1_2 = object : Migration(1, DATABASE_VERSION) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL("ALTER TABLE champions ADD COLUMN gender TEXT NOT NULL DEFAULT 'Desconhecido'")
                 db.execSQL("ALTER TABLE champions ADD COLUMN species TEXT NOT NULL DEFAULT 'Desconhecida'")
@@ -48,7 +53,9 @@ abstract class GameDatabase : RoomDatabase() {
         }
 
         fun create(context: Context) = Room.databaseBuilder(
-            context.applicationContext, GameDatabase::class.java, "loldle.db"
+            context.applicationContext,
+            GameDatabase::class.java,
+            DATABASE_NAME
         ).addMigrations(MIGRATION_1_2).build()
     }
 }

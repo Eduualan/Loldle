@@ -6,21 +6,20 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 
 class SessionViewModel : ViewModel() {
-    var role by mutableStateOf(PLAYER)
+    var role by mutableStateOf(ROLE_PLAYER)
         private set
 
-    fun loginPlayer() {
-        role = PLAYER
-    }
+    fun loginPlayer() { role = ROLE_PLAYER }
 
     fun loginAdmin(pin: String): Boolean {
         if (pin != ADMIN_PIN) return false
-        role = ADMIN
+        role = ROLE_ADMIN
         return true
     }
+
     private companion object {
-        const val PLAYER = "PLAYER"
-        const val ADMIN = "ADMIN"
+        const val ROLE_PLAYER = "PLAYER"
+        const val ROLE_ADMIN = "ADMIN"
         const val ADMIN_PIN = "1234"
     }
 }

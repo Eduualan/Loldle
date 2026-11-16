@@ -364,6 +364,8 @@ private fun ChampionFormScreen(champion: ChampionEntity?, admin: AdminViewModel,
     var role by rememberSaveable(champion?.id) { mutableStateOf(champion?.role.orEmpty()) }
     var resource by rememberSaveable(champion?.id) { mutableStateOf(champion?.resource.orEmpty()) }
     var range by rememberSaveable(champion?.id) { mutableStateOf(champion?.rangeType ?: "À distância") }
+    var gender by rememberSaveable(champion?.id) { mutableStateOf(champion?.gender ?: "Desconhecido") }
+    var species by rememberSaveable(champion?.id) { mutableStateOf(champion?.species ?: "Desconhecida") }
     LaunchedEffect(state.saveSucceeded) {
         if (state.saveSucceeded) {
             admin.clearSaveSucceeded()
@@ -373,12 +375,20 @@ private fun ChampionFormScreen(champion: ChampionEntity?, admin: AdminViewModel,
     Page(if (champion == null) "Novo campeão" else "Editar campeão") {
         state.error?.let { Text(it, color = Color(0xFFFF8A80)) }
         state.notice?.let { Text(it, color = if (state.saveSucceeded) Color(0xFF8BD3A8) else Color.LightGray) }
+        Text("Identificação", color = gold, fontWeight = FontWeight.Bold)
         Field("Nome", name) { name = it }
         Field("Título", title) { title = it }
+        HorizontalDivider(color = gold.copy(alpha = 0.5f))
+        Text("Características usadas nas dicas", color = gold, fontWeight = FontWeight.Bold)
         Field("Classe", role) { role = it }
+        Field("Gênero", gender) { gender = it }
+        Field("Espécie", species) { species = it }
         Field("Recurso", resource) { resource = it }
         Field("Alcance (À distância/Corpo a corpo)", range) { range = it }
-        Button(onClick = { admin.save(champion?.id, name, title, role, resource, range) }, modifier = Modifier.fillMaxWidth()) { Text("Salvar") }
+        Button(
+            onClick = { admin.save(champion?.id, name, title, role, resource, range, gender, species) },
+            modifier = Modifier.fillMaxWidth()
+        ) { Text("Salvar") }
     }
 }
 

@@ -22,15 +22,19 @@ interface ChampionTraitsApi {
 }
 
 object ApiFactory {
-    val api: ChampionApi = Retrofit.Builder()
-        .baseUrl("https://ddragon.leagueoflegends.com/")
-        .addConverterFactory(GsonConverterFactory.create())
-        .build()
-        .create(ChampionApi::class.java)
+    val api: ChampionApi = create(
+        baseUrl = "https://ddragon.leagueoflegends.com/",
+        service = ChampionApi::class.java
+    )
 
-    val traitsApi: ChampionTraitsApi = Retrofit.Builder()
-        .baseUrl("https://raw.githubusercontent.com/")
+    val traitsApi: ChampionTraitsApi = create(
+        baseUrl = "https://raw.githubusercontent.com/",
+        service = ChampionTraitsApi::class.java
+    )
+
+    private fun <T> create(baseUrl: String, service: Class<T>): T = Retrofit.Builder()
+        .baseUrl(baseUrl)
         .addConverterFactory(GsonConverterFactory.create())
         .build()
-        .create(ChampionTraitsApi::class.java)
+        .create(service)
 }

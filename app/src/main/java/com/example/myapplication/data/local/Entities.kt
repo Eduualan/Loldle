@@ -1,7 +1,7 @@
 package com.example.myapplication.data.local
 
-import androidx.room.Entity
 import androidx.room.ColumnInfo
+import androidx.room.Entity
 import androidx.room.PrimaryKey
 
 @Entity(tableName = "champions")
@@ -12,9 +12,16 @@ data class ChampionEntity(
     val role: String,
     val resource: String,
     val rangeType: String,
-    @ColumnInfo(defaultValue = "'Desconhecido'") val gender: String = "Desconhecido",
-    @ColumnInfo(defaultValue = "'Desconhecida'") val species: String = "Desconhecida"
-)
+    @ColumnInfo(defaultValue = "'Desconhecido'")
+    val gender: String = UNKNOWN_GENDER,
+    @ColumnInfo(defaultValue = "'Desconhecida'")
+    val species: String = UNKNOWN_SPECIES
+) {
+    companion object {
+        const val UNKNOWN_GENDER = "Desconhecido"
+        const val UNKNOWN_SPECIES = "Desconhecida"
+    }
+}
 
 @Entity(tableName = "games")
 data class GameEntity(
