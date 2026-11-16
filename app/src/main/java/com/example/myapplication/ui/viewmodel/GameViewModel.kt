@@ -16,6 +16,8 @@ import java.util.Calendar
 data class GuessResult(
     val champion: ChampionEntity,
     val sameRole: Boolean,
+    val sameGender: Boolean,
+    val sameSpecies: Boolean,
     val sameResource: Boolean,
     val sameRange: Boolean
 )
@@ -27,6 +29,7 @@ data class GameUiState(
     val message: String = "Adivinhe o campeão em até 6 tentativas.",
     val finished: Boolean = false,
     val player: String = "Jogador",
+    val championVersion: String? = null,
     val error: String? = null
 )
 
@@ -34,22 +37,29 @@ class GameViewModel(private val repository: ChampionRepository) : ViewModel() {
     var state by mutableStateOf(GameUiState())
         private set
     private var dailyAnswer: ChampionEntity? = null
-
     init {
         viewModelScope.launch {
             repository.observeChampions()
                 .catch { state = state.copy(error = "Não foi possível carregar os campeões."); emit(emptyList()) }
                 .collect { list ->
-                state = state.copy(champions = list)
-                if (dailyAnswer == null && list.isNotEmpty()) {
-                    val sorted = list.sortedBy { it.name }
-                    dailyAnswer = sorted[Calendar.getInstance().get(Calendar.DAY_OF_YEAR) % sorted.size]
-                } else if (dailyAnswer != null && list.none { it.id == dailyAnswer?.id } && list.isNotEmpty()) {
-                    dailyAnswer = list.random()
+                    if (list.isNotEmpty()) {
+                        val previousId = dailyAnswer?.id
+                        dailyAnswer = if (previousId == null) {
+                            val sorted = list.sortedBy { it.name }
+                            sorted[Calendar.getInstance().get(Calendar.DAY_OF_YEAR) % sorted.size]
+                        } else {
+                            list.firstOrNull { it.id == previousId } ?: list.random()
+                        }
+                    }
+                    val answer = dailyAnswer
+                    val refreshedGuesses = if (answer == null) state.guesses else state.guesses.mapNotNull { previous ->
+                        list.firstOrNull { it.id == previous.champion.id }?.let { makeGuessResult(it, answer) }
+                    }
+                    state = state.copy(champions = list, guesses = refreshedGuesses)
                 }
-            }
         }
         viewModelScope.launch { repository.gameError.collect { state = state.copy(error = it) } }
+        viewModelScope.launch { repository.championVersion.collect { state = state.copy(championVersion = it) } }
     }
 
     fun setPlayer(name: String) { state = state.copy(player = name.ifBlank { "Jogador" }) }
@@ -71,9 +81,7 @@ class GameViewModel(private val repository: ChampionRepository) : ViewModel() {
             return
         }
         val answer = dailyAnswer ?: return
-        val guesses = state.guesses + GuessResult(
-            guess, guess.role == answer.role, guess.resource == answer.resource, guess.rangeType == answer.rangeType
-        )
+        val guesses = state.guesses + makeGuessResult(guess, answer)
         val won = guess.id == answer.id
         val player = state.player
         val finished = won || guesses.size >= 6 || guesses.size == list.size
@@ -109,5 +117,30 @@ class GameViewModel(private val repository: ChampionRepository) : ViewModel() {
         if (champions.isEmpty()) return null
         val alternatives = champions.filterNot { it.id == previousId }
         return (alternatives.ifEmpty { champions }).random()
+    }
+
+    private fun makeGuessResult(guess: ChampionEntity, answer: ChampionEntity) = GuessResult(
+        champion = guess,
+        sameRole = sharesAnyValue(guess.role, answer.role),
+        sameGender = guess.gender.isKnownAndEquals(answer.gender),
+        sameSpecies = guess.sharesSpeciesWith(answer),
+        sameResource = guess.resource.equals(answer.resource, ignoreCase = true),
+        sameRange = guess.rangeType.equals(answer.rangeType, ignoreCase = true)
+    )
+
+    private fun ChampionEntity.sharesSpeciesWith(other: ChampionEntity): Boolean =
+        sharesAnyValue(species, other.species) && species.isKnown() && other.species.isKnown()
+
+    private fun String.isKnownAndEquals(other: String): Boolean =
+        isKnown() && other.isKnown() && equals(other, ignoreCase = true)
+
+    private fun String.isKnown(): Boolean =
+        isNotBlank() && !equals("Desconhecido", ignoreCase = true) && !equals("Desconhecida", ignoreCase = true)
+
+    private fun sharesAnyValue(first: String, second: String): Boolean {
+        val values = first.split("/").map { it.trim() }.filter { it.isNotEmpty() }
+        return second.split("/").map { it.trim() }.any { candidate ->
+            values.any { it.equals(candidate, ignoreCase = true) }
+        }
     }
 }

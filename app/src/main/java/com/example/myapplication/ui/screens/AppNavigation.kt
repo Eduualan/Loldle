@@ -1,45 +1,22 @@
 package com.example.myapplication.ui.screens
 
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Button
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
+import androidx.compose.foundation.*
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.*
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.PasswordVisualTransformation
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import androidx.navigation.NavType
-import androidx.navigation.compose.NavHost
-import androidx.navigation.compose.composable
-import androidx.navigation.compose.currentBackStackEntryAsState
-import androidx.navigation.compose.rememberNavController
-import androidx.navigation.navArgument
+import androidx.compose.ui.*
+import androidx.compose.ui.draw.*
+import androidx.compose.ui.graphics.*
+import androidx.compose.ui.layout.*
+import androidx.compose.ui.text.font.*
+import androidx.compose.ui.text.input.*
+import androidx.compose.ui.unit.*
+import androidx.navigation.*
+import androidx.navigation.compose.*
+import coil3.compose.*
 import com.example.myapplication.data.local.ChampionEntity
 import com.example.myapplication.data.local.GameEntity
 import com.example.myapplication.ui.viewmodel.AdminViewModel
@@ -58,9 +35,20 @@ fun AppNavigation(session: SessionViewModel, game: GameViewModel, admin: AdminVi
     val entry by nav.currentBackStackEntryAsState()
     val route = entry?.destination?.route.orEmpty()
     val mainRoutes = listOf("home", "game", "champions", "ranking")
-
     Scaffold(
         containerColor = ink,
+        topBar = {
+            if (route !in mainRoutes && route != "login") {
+                Row(Modifier.fillMaxWidth().background(ink).padding(horizontal = 12.dp, vertical = 4.dp)) {
+                    TextButton(onClick = {
+                        nav.navigate("home") {
+                            popUpTo("home") { inclusive = false }
+                            launchSingleTop = true
+                        }
+                    }) { Text("← Início", color = gold) }
+                }
+            }
+        },
         bottomBar = {
             if (route in mainRoutes) NavigationBar(containerColor = panel) {
                 listOf("home" to "Início", "game" to "Jogar", "champions" to "Campeões", "ranking" to "Ranking").forEach { (destination, label) ->
@@ -87,7 +75,7 @@ fun AppNavigation(session: SessionViewModel, game: GameViewModel, admin: AdminVi
             composable("game") { GameScreen(game) }
             composable("champions") { ChampionListScreen(admin) { nav.navigate("detail/${it.id}") } }
             composable("detail/{id}", arguments = listOf(navArgument("id") { type = NavType.StringType })) { back ->
-                ChampionDetailScreen(admin.state.champions.firstOrNull { it.id == back.arguments?.getString("id") })
+                ChampionDetailScreen(admin.state.champions.firstOrNull { it.id == back.arguments?.getString("id") }, admin.state.championVersion)
             }
             composable("ranking") { RankingScreen(admin) }
             composable("history") {
@@ -158,25 +146,41 @@ private fun GameScreen(game: GameViewModel) {
         Text("Tentativas: ${state.guesses.size}/6", color = gold, fontWeight = FontWeight.Bold)
         Field("Nome do campeão", state.guess, enabled = !state.finished, onChange = game::updateGuess)
         if (suggestions.isNotEmpty()) suggestions.forEach { champion ->
-            Text(champion.name, color = Color.White, modifier = Modifier.fillMaxWidth().clickable { game.updateGuess(champion.name) }.padding(8.dp))
+            Card(
+                Modifier.fillMaxWidth().clickable { game.updateGuess(champion.name) },
+                colors = CardDefaults.cardColors(containerColor = panel)
+            ) {
+                Row(Modifier.padding(8.dp), horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
+                    ChampionPortrait(champion, state.championVersion, 48)
+                    Column {
+                        Text(champion.name, color = Color.White, fontWeight = FontWeight.SemiBold)
+                        Text(champion.role, color = Color.LightGray, fontSize = 12.sp)
+                    }
+                }
+            }
         }
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             Button(onClick = game::submitGuess, enabled = !state.finished) { Text("Tentar") }
             Button(onClick = game::restart) { Text("Nova partida") }
         }
         state.error?.let { Text(it, color = Color(0xFFFF8A80)) }
-        state.guesses.reversed().forEach { GuessCard(it) }
+        state.guesses.reversed().forEach { GuessCard(it, state.championVersion) }
     }
 }
 
 @Composable
-private fun GuessCard(result: GuessResult) {
+private fun GuessCard(result: GuessResult, version: String?) {
     Card(Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = panel)) {
-        Column(Modifier.padding(12.dp)) {
-            Text(result.champion.name, color = gold, fontWeight = FontWeight.Bold)
-            Hint("Classe", result.champion.role, result.sameRole)
-            Hint("Recurso", result.champion.resource, result.sameResource)
-            Hint("Alcance", result.champion.rangeType, result.sameRange)
+        Row(Modifier.padding(12.dp), horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
+            ChampionPortrait(result.champion, version, 64)
+            Column {
+                Text(result.champion.name, color = gold, fontWeight = FontWeight.Bold)
+                Hint("Classe", result.champion.role, result.sameRole)
+                Hint("Gênero", result.champion.gender, result.sameGender)
+                Hint("Raça", result.champion.species, result.sameSpecies)
+                Hint("Recurso", result.champion.resource, result.sameResource)
+                Hint("Alcance", result.champion.rangeType, result.sameRange)
+            }
         }
     }
 }
@@ -196,9 +200,12 @@ private fun ChampionListScreen(admin: AdminViewModel, onOpen: (ChampionEntity) -
         LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
             items(shown, key = { it.id }) { champion ->
                 Card(Modifier.fillMaxWidth().clickable { onOpen(champion) }, colors = CardDefaults.cardColors(containerColor = panel)) {
-                    Column(Modifier.padding(12.dp)) {
-                        Text(champion.name, color = Color.White, fontWeight = FontWeight.Bold)
-                        Text(champion.role, color = Color.LightGray)
+                    Row(Modifier.padding(10.dp), horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
+                        ChampionPortrait(champion, admin.state.championVersion, 56)
+                        Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                            Text(champion.name, color = Color.White, fontWeight = FontWeight.Bold)
+                            Text(champion.role, color = Color.LightGray, fontSize = 13.sp)
+                        }
                     }
                 }
             }
@@ -207,10 +214,13 @@ private fun ChampionListScreen(admin: AdminViewModel, onOpen: (ChampionEntity) -
 }
 
 @Composable
-private fun ChampionDetailScreen(champion: ChampionEntity?) {
+private fun ChampionDetailScreen(champion: ChampionEntity?, version: String?) {
     Page(champion?.name ?: "Campeão", champion?.title ?: "Não encontrado") {
         champion?.let {
+            ChampionPortrait(it, version, 144)
             Text("Classe: ${it.role}", color = Color.White)
+            Text("Gênero: ${it.gender}", color = Color.White)
+            Text("Raça: ${it.species}", color = Color.White)
             Text("Recurso: ${it.resource}", color = Color.White)
             Text("Alcance: ${it.rangeType}", color = Color.White)
         }
@@ -269,14 +279,12 @@ private fun GameRecordFormScreen(game: GameEntity, admin: AdminViewModel, onSave
     var attempts by rememberSaveable(game.id) { mutableStateOf(game.attempts.toString()) }
     var won by rememberSaveable(game.id) { mutableStateOf(game.won) }
     var validationError by rememberSaveable(game.id) { mutableStateOf("") }
-
     LaunchedEffect(state.gameUpdateSucceeded) {
         if (state.gameUpdateSucceeded) {
             admin.clearGameUpdateSucceeded()
             onSaved()
         }
     }
-
     Page("Editar partida", "Corrija os dados do histórico") {
         state.error?.let { Text(it, color = Color(0xFFFF8A80)) }
         state.notice?.let { Text(it, color = Color.LightGray) }
@@ -314,13 +322,36 @@ private fun AdminScreen(admin: AdminViewModel, onEdit: (String?) -> Unit, onHist
         LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
             items(state.champions, key = { it.id }) { champion ->
                 Card(Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = panel)) {
-                    Row(Modifier.padding(8.dp), horizontalArrangement = Arrangement.SpaceBetween) {
-                        Text(champion.name, color = Color.White, modifier = Modifier.weight(1f).padding(top = 12.dp))
+                    Row(Modifier.padding(8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                        ChampionPortrait(champion, state.championVersion, 48)
+                        Text(champion.name, color = Color.White, modifier = Modifier.weight(1f))
                         Button(onClick = { onEdit(champion.id) }) { Text("Editar") }
                         Button(onClick = { admin.delete(champion) }) { Text("Excluir") }
                     }
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun ChampionPortrait(champion: ChampionEntity, version: String?, size: Int) {
+    val shape = RoundedCornerShape(10.dp)
+    var imageFailed by remember(champion.id, version) { mutableStateOf(false) }
+    Box(
+        modifier = Modifier.size(size.dp).clip(shape),
+        contentAlignment = Alignment.Center
+    ) {
+        Surface(modifier = Modifier.fillMaxSize(), shape = shape, color = Color(0xFF303B46)) { }
+        if (version != null && !imageFailed) {
+            AsyncImage(
+                model = "https://ddragon.leagueoflegends.com/cdn/$version/img/champion/${champion.id}.png",
+                contentDescription = "Retrato de ${champion.name}",
+                contentScale = ContentScale.Crop,
+                onError = { imageFailed = true }
+            )
+        } else {
+            Text(champion.name.take(1).uppercase(), color = gold, fontWeight = FontWeight.Bold)
         }
     }
 }
