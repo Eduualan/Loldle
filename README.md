@@ -4,6 +4,21 @@ Link Video de Demonstração https://youtu.be/1SIDVF0ZJMY
 
 Aplicativo Android para adivinhar campeões de League of Legends. A cada palpite, o jogador recebe dicas de classe, gênero, raça/espécie, recurso e alcance. Os retratos aparecem nas sugestões e listas. Ao acertar, a vitória é salva no histórico e uma nova rodada começa.
 
+## Capturas de tela
+
+<table>
+  <tr>
+    <td align="center"><img src="docs/images/tela-de-entrada.png" width="220" alt="Tela de entrada do Loldle"></td>
+    <td align="center"><img src="docs/images/partida-e-dicas.png" width="220" alt="Partida com sugestões de campeões"></td>
+    <td align="center"><img src="docs/images/mensagem-de-vitoria.png" width="220" alt="Mensagem exibida ao acertar o campeão"></td>
+  </tr>
+  <tr>
+    <td align="center"><strong>Entrada</strong><br>Escolha como entrar no jogo.</td>
+    <td align="center"><strong>Partida</strong><br>Descubra o campeão em até seis tentativas.</td>
+    <td align="center"><strong>Vitória</strong><br>Receba a confirmação ao acertar.</td>
+  </tr>
+</table>
+
 ## Funcionalidades
 
 - Login de jogador e perfil administrativo de demonstração (PIN `1234`).
