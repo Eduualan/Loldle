@@ -1,6 +1,6 @@
 # LOLDLE
 
-Aplicativo Android de adivinhação de campeões de League of Legends. O jogador escolhe um nome entre as sugestões e recebe dicas de classe, recurso e alcance. Ao acertar, a vitória é salva no histórico e uma nova rodada começa.
+Aplicativo Android para adivinhar campeões de League of Legends. A cada palpite, o jogador recebe dicas de classe, gênero, raça/espécie, recurso e alcance. Os retratos aparecem nas sugestões e listas. Ao acertar, a vitória é salva no histórico e uma nova rodada começa.
 
 ## Funcionalidades
 
@@ -10,14 +10,16 @@ Aplicativo Android de adivinhação de campeões de League of Legends. O jogador
 - Histórico local e ranking de vitórias.
 - Consulta, cadastro, edição e exclusão de campeões.
 - Consulta, edição e exclusão de partidas no perfil administrativo.
-- Sincronização de campeões com a API Data Dragon; uma lista de demonstração é usada se a rede estiver indisponível durante a primeira inicialização.
+- Sincronização de nomes, classes, recursos e alcance com a API [Data Dragon](https://developer.riotgames.com/docs/lol#data-dragon); retratos carregados do CDN oficial.
+- Gênero e raça/espécie complementados pelo arquivo comunitário [LoLdleData](https://github.com/iEranDEV/loldle-data/blob/master/output.json), pois esses campos não fazem parte do catálogo do Data Dragon.
+- Uma lista de demonstração é usada se a API estiver indisponível na primeira inicialização.
 
 ## Tecnologias e arquitetura
 
 - Kotlin e Jetpack Compose para interface.
 - MVVM com `GameViewModel`, `AdminViewModel` e `SessionViewModel`, criados por `AppViewModelFactory`.
 - Room para persistência local de campeões e partidas, com listas reativas via `Flow`.
-- Retrofit para integração com Data Dragon.
+- Retrofit para integração com Data Dragon e LoLdleData.
 - Navigation Compose e barra de navegação inferior.
 
 Os pacotes principais ficam em `data/local`, `data/remote`, `data/repository` e `ui`.
@@ -33,5 +35,5 @@ O projeto usa `minSdk 24`. O Android Studio instalará as dependências declarad
 ## Observações
 
 - O PIN de administrador é fixo e serve apenas para demonstração acadêmica; não é autenticação segura para produção.
-- O catálogo remoto vem em inglês (Data Dragon, `en_US`); a interface do aplicativo está em português.
+- O catálogo base vem em inglês (`en_US`); os campos de gênero e espécie são traduzidos pelo app quando há tradução disponível.
 - As partidas são armazenadas localmente no dispositivo.

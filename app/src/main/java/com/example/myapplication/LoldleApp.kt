@@ -8,6 +8,6 @@ import com.example.myapplication.data.repository.ChampionRepository
 class LoldleApp : Application() {
     val repository by lazy {
         val db = GameDatabase.create(this)
-        ChampionRepository(db.champions(), db.games(), ApiFactory.api)
+        ChampionRepository(db.champions(), db.games(), ApiFactory.api, ApiFactory.traitsApi)
     }
 }

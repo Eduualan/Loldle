@@ -18,7 +18,6 @@ class SessionViewModel : ViewModel() {
         role = ADMIN
         return true
     }
-
     private companion object {
         const val PLAYER = "PLAYER"
         const val ADMIN = "ADMIN"

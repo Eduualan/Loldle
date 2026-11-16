@@ -15,6 +15,7 @@ import kotlinx.coroutines.launch
 data class AdminUiState(
     val champions: List<ChampionEntity> = emptyList(),
     val games: List<GameEntity> = emptyList(),
+    val championVersion: String? = null,
     val error: String? = null,
     val notice: String? = null,
     val saveSucceeded: Boolean = false,
@@ -24,7 +25,6 @@ data class AdminUiState(
 class AdminViewModel(private val repository: ChampionRepository) : ViewModel() {
     var state by mutableStateOf(AdminUiState())
         private set
-
     init {
         viewModelScope.launch {
             repository.observeChampions()
@@ -37,6 +37,7 @@ class AdminViewModel(private val repository: ChampionRepository) : ViewModel() {
                 .collect { state = state.copy(games = it) }
         }
         viewModelScope.launch { repository.adminError.collect { state = state.copy(error = it) } }
+        viewModelScope.launch { repository.championVersion.collect { state = state.copy(championVersion = it) } }
     }
 
     fun sync() = viewModelScope.launch {
@@ -83,7 +84,6 @@ class AdminViewModel(private val repository: ChampionRepository) : ViewModel() {
         )
     }
 
-    fun clearNotice() { state = state.copy(notice = null) }
     fun clearSaveSucceeded() { state = state.copy(saveSucceeded = false) }
     fun clearGameUpdateSucceeded() { state = state.copy(gameUpdateSucceeded = false) }
 

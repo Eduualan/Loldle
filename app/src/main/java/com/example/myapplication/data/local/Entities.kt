@@ -1,6 +1,7 @@
 package com.example.myapplication.data.local
 
 import androidx.room.Entity
+import androidx.room.ColumnInfo
 import androidx.room.PrimaryKey
 
 @Entity(tableName = "champions")
@@ -10,7 +11,9 @@ data class ChampionEntity(
     val title: String,
     val role: String,
     val resource: String,
-    val rangeType: String
+    val rangeType: String,
+    @ColumnInfo(defaultValue = "'Desconhecido'") val gender: String = "Desconhecido",
+    @ColumnInfo(defaultValue = "'Desconhecida'") val species: String = "Desconhecida"
 )
 
 @Entity(tableName = "games")
