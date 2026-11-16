@@ -1,3 +1,5 @@
+https://youtu.be/1SIDVF0ZJMY
+
 # LOLDLE
 
 Aplicativo Android para adivinhar campeões de League of Legends. A cada palpite, o jogador recebe dicas de classe, gênero, raça/espécie, recurso e alcance. Os retratos aparecem nas sugestões e listas. Ao acertar, a vitória é salva no histórico e uma nova rodada começa.
