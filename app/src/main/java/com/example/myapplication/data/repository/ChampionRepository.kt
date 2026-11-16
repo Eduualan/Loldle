@@ -91,7 +91,8 @@ class ChampionRepository(
             champions.updateTraits(
                 id,
                 traits.gender.toPortugueseGender(),
-                traits.species.toPortugueseSpecies()
+                traits.species.toPortugueseSpecies(),
+                traits.regions.toPortugueseRegions()
             )
         }
     }
@@ -104,7 +105,8 @@ class ChampionRepository(
         resource = partype.ifBlank { "Sem recurso" },
         rangeType = if (stats.attackrange > 300) "À distância" else "Corpo a corpo",
         gender = traits?.gender.toPortugueseGender(),
-        species = traits?.species.toPortugueseSpecies()
+        species = traits?.species.toPortugueseSpecies(),
+        region = traits?.regions.toPortugueseRegions()
     )
     suspend fun saveChampion(champion: ChampionEntity) = safeAdmin { champions.insert(champion) } != null
     suspend fun updateChampion(champion: ChampionEntity) = safeAdmin { champions.update(champion) > 0 } == true
@@ -176,6 +178,30 @@ class ChampionRepository(
         ?.joinToString(" / ")
         ?.ifBlank { ChampionEntity.UNKNOWN_SPECIES }
         ?: ChampionEntity.UNKNOWN_SPECIES
+
+    private fun List<String>?.toPortugueseRegions(): String = this
+        ?.map { region ->
+            when (region.lowercase()) {
+                "bandle city" -> "Cidade de Bandle"
+                "bilgewater" -> "Águas de Sentina"
+                "demacia" -> "Demacia"
+                "freljord" -> "Freljord"
+                "ionia" -> "Ionia"
+                "ixtal" -> "Ixtal"
+                "noxus" -> "Noxus"
+                "piltover" -> "Piltover"
+                "shadow isles" -> "Ilhas das Sombras"
+                "shurima" -> "Shurima"
+                "targon" -> "Targon"
+                "the void" -> "O Vazio"
+                "zaun" -> "Zaun"
+                "runeterra" -> "Runeterra"
+                else -> region
+            }
+        }
+        ?.joinToString(" / ")
+        ?.ifBlank { ChampionEntity.UNKNOWN_REGION }
+        ?: ChampionEntity.UNKNOWN_REGION
 
     private val sampleChampions = listOf(
         ChampionEntity("Ahri", "Ahri", "A Raposa de Nove Caudas", "Mago", "Mana", "À distância"),

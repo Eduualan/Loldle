@@ -188,6 +188,7 @@ private fun GuessCard(result: GuessResult, version: String?) {
                 Hint("Classe", result.champion.role, result.sameRole)
                 Hint("Gênero", result.champion.gender, result.sameGender)
                 Hint("Raça", result.champion.species, result.sameSpecies)
+                Hint("Região", result.champion.region, result.sameRegion)
                 Hint("Recurso", result.champion.resource, result.sameResource)
                 Hint("Alcance", result.champion.rangeType, result.sameRange)
             }
@@ -231,6 +232,7 @@ private fun ChampionDetailScreen(champion: ChampionEntity?, version: String?) {
             Text("Classe: ${it.role}", color = Color.White)
             Text("Gênero: ${it.gender}", color = Color.White)
             Text("Raça: ${it.species}", color = Color.White)
+            Text("Região: ${it.region}", color = Color.White)
             Text("Recurso: ${it.resource}", color = Color.White)
             Text("Alcance: ${it.rangeType}", color = Color.White)
         }
@@ -376,6 +378,7 @@ private fun ChampionFormScreen(champion: ChampionEntity?, admin: AdminViewModel,
     var range by rememberSaveable(champion?.id) { mutableStateOf(champion?.rangeType ?: "À distância") }
     var gender by rememberSaveable(champion?.id) { mutableStateOf(champion?.gender ?: "Desconhecido") }
     var species by rememberSaveable(champion?.id) { mutableStateOf(champion?.species ?: "Desconhecida") }
+    var region by rememberSaveable(champion?.id) { mutableStateOf(champion?.region ?: "Desconhecida") }
     LaunchedEffect(state.saveSucceeded) {
         if (state.saveSucceeded) {
             admin.clearSaveSucceeded()
@@ -393,10 +396,11 @@ private fun ChampionFormScreen(champion: ChampionEntity?, admin: AdminViewModel,
         Field("Classe", role) { role = it }
         Field("Gênero", gender) { gender = it }
         Field("Espécie", species) { species = it }
+        Field("Região", region) { region = it }
         Field("Recurso", resource) { resource = it }
         Field("Alcance (À distância/Corpo a corpo)", range) { range = it }
         Button(
-            onClick = { admin.save(champion?.id, name, title, role, resource, range, gender, species) },
+            onClick = { admin.save(champion?.id, name, title, role, resource, range, gender, species, region) },
             modifier = Modifier.fillMaxWidth()
         ) { Text("Salvar") }
     }

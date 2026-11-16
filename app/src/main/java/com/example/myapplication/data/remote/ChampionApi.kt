@@ -14,8 +14,8 @@ interface ChampionApi {
     suspend fun champions(@Path("version") version: String): ChampionResponse
 }
 
-// Gênero e espécie complementares extraídos do repositório comunitário LoLdleData.
-data class ChampionTraitsDto(val id: String, val gender: String?, val species: List<String>?)
+// Gênero, espécie e regiões complementares extraídos do repositório comunitário LoLdleData.
+data class ChampionTraitsDto(val id: String, val gender: String?, val species: List<String>?, val regions: List<String>?)
 interface ChampionTraitsApi {
     @GET("iEranDEV/loldle-data/refs/heads/master/output.json")
     suspend fun championTraits(): List<ChampionTraitsDto>

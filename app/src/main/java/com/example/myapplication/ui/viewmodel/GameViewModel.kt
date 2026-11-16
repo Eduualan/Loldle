@@ -18,6 +18,7 @@ data class GuessResult(
     val sameRole: Boolean,
     val sameGender: Boolean,
     val sameSpecies: Boolean,
+    val sameRegion: Boolean,
     val sameResource: Boolean,
     val sameRange: Boolean
 )
@@ -130,12 +131,16 @@ class GameViewModel(private val repository: ChampionRepository) : ViewModel() {
         sameRole = sharesAnyValue(guess.role, answer.role),
         sameGender = guess.gender.isKnownAndEquals(answer.gender),
         sameSpecies = guess.sharesSpeciesWith(answer),
+        sameRegion = guess.sharesRegionWith(answer),
         sameResource = guess.resource.equals(answer.resource, ignoreCase = true),
         sameRange = guess.rangeType.equals(answer.rangeType, ignoreCase = true)
     )
 
     private fun ChampionEntity.sharesSpeciesWith(other: ChampionEntity): Boolean =
         sharesAnyValue(species, other.species) && species.isKnown() && other.species.isKnown()
+
+    private fun ChampionEntity.sharesRegionWith(other: ChampionEntity): Boolean =
+        sharesAnyValue(region, other.region) && region.isKnown() && other.region.isKnown()
 
     private fun String.isKnownAndEquals(other: String): Boolean =
         isKnown() && other.isKnown() && equals(other, ignoreCase = true)

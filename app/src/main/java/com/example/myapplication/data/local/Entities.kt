@@ -15,11 +15,14 @@ data class ChampionEntity(
     @ColumnInfo(defaultValue = "'Desconhecido'")
     val gender: String = UNKNOWN_GENDER,
     @ColumnInfo(defaultValue = "'Desconhecida'")
-    val species: String = UNKNOWN_SPECIES
+    val species: String = UNKNOWN_SPECIES,
+    @ColumnInfo(defaultValue = "'Desconhecida'")
+    val region: String = UNKNOWN_REGION
 ) {
     companion object {
         const val UNKNOWN_GENDER = "Desconhecido"
         const val UNKNOWN_SPECIES = "Desconhecida"
+        const val UNKNOWN_REGION = "Desconhecida"
     }
 }
 

@@ -74,7 +74,8 @@ class AdminViewModel(private val repository: ChampionRepository) : ViewModel() {
         resource: String,
         range: String,
         gender: String,
-        species: String
+        species: String,
+        region: String
     ) = viewModelScope.launch {
         state = state.copy(saveSucceeded = false, notice = null)
         if (name.isBlank() || title.isBlank() || role.isBlank()) {
@@ -94,7 +95,8 @@ class AdminViewModel(private val repository: ChampionRepository) : ViewModel() {
             resource = resource.trim().ifBlank { "Desconhecido" },
             rangeType = range.trim().ifBlank { "Desconhecido" },
             gender = gender.trim().ifBlank { ChampionEntity.UNKNOWN_GENDER },
-            species = species.trim().ifBlank { ChampionEntity.UNKNOWN_SPECIES }
+            species = species.trim().ifBlank { ChampionEntity.UNKNOWN_SPECIES },
+            region = region.trim().ifBlank { ChampionEntity.UNKNOWN_REGION }
         )
         val saved = if (id == null) repository.saveChampion(champion) else repository.updateChampion(champion)
         state = state.copy(
@@ -110,7 +112,7 @@ class AdminViewModel(private val repository: ChampionRepository) : ViewModel() {
         if (query.isBlank()) return state.champions.sortedBy { it.name }
 
         return state.champions.filter { champion ->
-            listOf(champion.name, champion.title, champion.role, champion.gender, champion.species)
+            listOf(champion.name, champion.title, champion.role, champion.gender, champion.species, champion.region)
                 .any { value -> value.contains(query.trim(), ignoreCase = true) }
         }.sortedBy { it.name }
     }
