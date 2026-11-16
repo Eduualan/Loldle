@@ -142,6 +142,16 @@ private fun HomeScreen(role: String, onGame: () -> Unit, onHistory: () -> Unit, 
 private fun GameScreen(game: GameViewModel) {
     val state = game.state
     val suggestions = game.suggestions()
+    if (state.message.startsWith("Parabéns!")) {
+        AlertDialog(
+            onDismissRequest = game::dismissWinMessage,
+            title = { Text("Parabéns!") },
+            text = { Text(state.message) },
+            confirmButton = {
+                TextButton(onClick = game::dismissWinMessage) { Text("Continuar") }
+            }
+        )
+    }
     Page("Partida", state.message) {
         Text("Tentativas: ${state.guesses.size}/6", color = gold, fontWeight = FontWeight.Bold)
         Field("Nome do campeão", state.guess, enabled = !state.finished, onChange = game::updateGuess)

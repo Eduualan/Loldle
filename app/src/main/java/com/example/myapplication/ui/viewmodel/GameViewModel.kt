@@ -92,7 +92,7 @@ class GameViewModel(private val repository: ChampionRepository) : ViewModel() {
                 guesses = emptyList(),
                 guess = "",
                 finished = false,
-                message = "Acertou! O campeão era ${answer.name}. Nova rodada iniciada."
+                message = "Parabéns! Você acertou o campeão ${answer.name}!"
             )
             viewModelScope.launch {
                 repository.saveGame(GameEntity(player = player, champion = answer.name, won = true, attempts = guesses.size))
@@ -111,6 +111,12 @@ class GameViewModel(private val repository: ChampionRepository) : ViewModel() {
     fun restart() {
         dailyAnswer = nextAnswer(state.champions.sortedBy { it.name }, dailyAnswer?.id)
         state = state.copy(guesses = emptyList(), guess = "", finished = false, message = "Adivinhe o campeão em até 6 tentativas.")
+    }
+
+    fun dismissWinMessage() {
+        if (state.message.startsWith("Parabéns!")) {
+            state = state.copy(message = "Adivinhe o campeão em até 6 tentativas.")
+        }
     }
 
     private fun nextAnswer(champions: List<ChampionEntity>, previousId: String?): ChampionEntity? {
